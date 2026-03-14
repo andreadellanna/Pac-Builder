@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PAC Builder — ETF Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08080f;--s1:#0f0f1a;--s2:#161624;--s3:#1e1e2e;
+  --b1:rgba(255,255,255,.06);--b2:rgba(255,255,255,.11);--b3:rgba(255,255,255,.18);
+  --accent:#6ee7b7;--accent2:#818cf8;--accent3:#f59e0b;--accent4:#f472b6;
+  --text:#f0f0f8;--muted:#6b7280;--muted2:#9ca3af;
+  --danger:#f87171;--success:#6ee7b7;--warn:#f59e0b;
+  --mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;--display:'Syne',sans-serif;
+  --r:12px;--r2:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;min-height:100vh;overflow-x:hidden;line-height:1.5}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 20% 20%,rgba(110,231,183,.04) 0%,transparent 50%),radial-gradient(circle at 80% 80%,rgba(129,140,248,.04) 0%,transparent 50%);pointer-events:none;z-index:0}
+.app{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:32px 16px 100px}
+@media(min-width:600px){.app{padding:48px 24px 100px}}
+header{margin-bottom:40px}
+.logo-line{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%}
+.logo-text{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.2em;text-transform:uppercase}
+h1{font-family:var(--display);font-size:clamp(28px,6vw,50px);font-weight:800;line-height:1.0;letter-spacing:-.03em;margin-bottom:12px}
+h1 em{color:var(--accent);font-style:normal}
+.subtitle{color:var(--muted2);font-size:15px;font-weight:300;max-width:500px;line-height:1.65}
+.stepper{display:flex;align-items:center;gap:0;margin-bottom:36px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:6px}
+.step-item{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 8px;border-radius:var(--r);font-size:12px;color:var(--muted);cursor:pointer;transition:all .2s;min-width:0}
+.step-item.active{background:var(--s3);color:var(--text);box-shadow:0 1px 8px rgba(0,0,0,.3)}
+.step-item.done{color:var(--accent)}
+.step-num{font-family:var(--mono);font-size:10px;width:18px;height:18px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-item.done .step-num{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.step-item.active .step-num{border-color:var(--accent);color:var(--accent)}
+.step-label{font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:480px){.step-label{display:none}}
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:20px;margin-bottom:14px}
+.card-title{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+.card-title::before{content:'';width:18px;height:1.5px;background:var(--accent);flex-shrink:0}
+.budget-field{display:flex;align-items:center;gap:8px;flex:1;min-width:200px}
+.currency{font-family:var(--display);font-size:28px;font-weight:700;color:var(--muted);line-height:1}
+.budget-input{font-family:var(--mono);font-size:34px;font-weight:500;background:transparent;border:none;border-bottom:2px solid var(--b2);color:var(--text);width:160px;padding:6px 0;outline:none;transition:border-color .2s;-moz-appearance:textfield}
+.budget-input::-webkit-inner-spin-button,.budget-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.budget-input:focus{border-color:var(--accent)}
+.budget-presets{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.preset-btn{font-family:var(--mono);font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid var(--b2);background:transparent;color:var(--muted2);cursor:pointer;transition:all .15s}
+.preset-btn:hover,.preset-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(110,231,183,.06)}
+.broker-grid{display:flex;gap:8px;flex-wrap:wrap}
+.broker-pill{border:1.5px solid var(--b1);border-radius:10px;padding:9px 16px;cursor:pointer;font-size:12px;font-weight:500;transition:all .15s;display:flex;align-items:center;gap:8px;color:var(--muted2)}
+.broker-pill:hover{border-color:var(--b2);color:var(--text)}
+.broker-pill.selected{border-color:var(--accent2);background:rgba(129,140,248,.08);color:var(--accent2)}
+.broker-pill .promo-dot{width:6px;height:6px;border-radius:50%;background:var(--success);display:none}
+.broker-pill.selected .promo-dot{display:block}
+.cat-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px}
+.cat-btn{font-size:10px;font-family:var(--mono);padding:5px 12px;border-radius:8px;border:1px solid var(--b1);background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.cat-btn:hover{border-color:var(--b2);color:var(--muted2)}
+.cat-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(110,231,183,.07)}
+.cat-section{margin-bottom:20px}
+.cat-header{font-family:var(--mono);font-size:10px;font-weight:500;letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.cat-header::after{content:'';flex:1;height:1px;background:var(--b1)}
+.index-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:7px}
+@media(max-width:420px){.index-grid{grid-template-columns:1fr 1fr}}
+.index-pill{border:1.5px solid var(--b1);border-radius:10px;padding:9px 11px;cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:8px;user-select:none}
+.index-pill:hover{border-color:var(--b2);background:var(--s2)}
+.index-pill.selected{border-color:var(--accent);background:rgba(110,231,183,.05)}
+.index-pill.selected .ichk{background:var(--accent);border-color:var(--accent)}
+.ichk{width:15px;height:15px;border-radius:4px;border:1.5px solid var(--b2);flex-shrink:0;transition:all .15s;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.ichk svg{display:none}
+.index-pill.selected .ichk svg{display:block}
+.iname{font-size:12px;font-weight:500;line-height:1.3}
+.iregion{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.ibadge{font-size:9px;font-family:var(--mono);padding:2px 5px;border-radius:4px;margin-left:auto;flex-shrink:0;white-space:nowrap}
+.sel-counter{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:12px;padding-top:12px;border-top:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center}
+.count{color:var(--accent)}
+.clear-btn{font-size:11px;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:6px;border:1px solid var(--b1);background:transparent;transition:all .15s}
+.clear-btn:hover{color:var(--danger);border-color:var(--danger)}
+
+/* WEIGHT ROW — manual input */
+.weight-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)}
+.weight-row:last-child{border-bottom:none}
+.wname{flex:1;min-width:0}
+.wname-main{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wname-sub{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px}
+.wslider-wrap{flex:2;min-width:80px}
+input[type=range]{width:100%;height:3px;accent-color:var(--accent);cursor:pointer}
+.wnum-input{font-family:var(--mono);font-size:14px;font-weight:500;width:52px;background:var(--s2);border:1px solid var(--b2);border-radius:7px;color:var(--accent);text-align:center;padding:4px 6px;outline:none;transition:border-color .2s;-moz-appearance:textfield}
+.wnum-input::-webkit-inner-spin-button,.wnum-input::-webkit-outer-spin-button{-webkit-appearance:none}
+.wnum-input:focus{border-color:var(--accent)}
+.weur-lbl{font-family:var(--mono);font-size:10px;color:var(--muted);min-width:36px;text-align:right}
+.wt-bar{height:4px;background:var(--s3);border-radius:2px;margin-top:8px;overflow:hidden}
+.wt-bar-fill{height:100%;border-radius:2px;transition:width .2s,background .2s}
+.weight-total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0 4px;font-family:var(--mono);font-size:12px;border-top:1px solid var(--b1);margin-top:4px}
+.wt-ok{color:var(--success)}.wt-over{color:var(--danger)}.wt-under{color:var(--warn)}
+.auto-balance-btn{font-size:11px;padding:5px 12px;border-radius:8px;border:1px solid var(--b2);background:transparent;color:var(--muted2);cursor:pointer;transition:all .15s;font-family:var(--sans)}
+.auto-balance-btn:hover{border-color:var(--accent);color:var(--accent)}
+.tip-box{background:rgba(110,231,183,.05);border:1px solid rgba(110,231,183,.15);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--muted2);line-height:1.6;margin-top:14px;display:flex;gap:10px;align-items:flex-start}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:var(--r);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;font-family:var(--sans);border:none;white-space:nowrap}
+.btn-primary{background:var(--accent);color:var(--bg)}
+.btn-primary:hover{background:#34d399;transform:translateY(-1px);box-shadow:0 4px 20px rgba(110,231,183,.2)}
+.btn-primary:active{transform:translateY(0)}
+.btn-primary:disabled{background:var(--s3);color:var(--muted);cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:transparent;color:var(--muted2);border:1px solid var(--b2)}
+.btn-ghost:hover{border-color:var(--b3);color:var(--text)}
+.nav-row{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px;flex-wrap:wrap}
+@media(max-width:600px){.nav-row .btn{flex:1;justify-content:center}}
+
+/* RESULTS */
+.results-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:560px){.results-summary{grid-template-columns:repeat(2,1fr)}}
+.summary-card{background:var(--s2);border-radius:var(--r);padding:12px 14px;text-align:center}
+.summary-label{font-size:10px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.summary-val{font-size:18px;font-weight:500;font-family:var(--mono)}
+.result-section{margin-bottom:26px;animation:fadeUp .25s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.result-section-title{font-family:var(--display);font-size:16px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.result-section-title::after{content:'';flex:1;height:1px;background:var(--b1);min-width:20px}
+.badge-pct{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:6px;background:var(--s2);color:var(--muted2)}
+.etf-best,.etf-alt{border-radius:var(--r2);padding:16px 18px;margin-bottom:8px}
+.etf-best{background:var(--s2);border:1px solid var(--b2)}
+.etf-alt{background:var(--s1);border:1px solid var(--b1);opacity:.8}
+.etf-top-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.etf-rank{font-family:var(--mono);font-size:10px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.etf-rank-1{background:var(--accent);color:var(--bg)}
+.etf-rank-2{background:var(--s3);color:var(--muted2);border:1px solid var(--b2)}
+.etf-body{flex:1;min-width:0}
+.etf-ticker{font-family:var(--mono);font-size:16px;font-weight:500}
+.etf-name{font-size:12px;color:var(--muted2);margin-top:2px;line-height:1.4}
+.etf-isin{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:3px}
+.etf-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.tag{font-size:10px;font-family:var(--mono);padding:3px 7px;border-radius:5px;border:1px solid}
+.tg{background:rgba(110,231,183,.08);border-color:rgba(110,231,183,.25);color:var(--accent)}
+.tb{background:rgba(129,140,248,.08);border-color:rgba(129,140,248,.25);color:var(--accent2)}
+.ta{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.25);color:var(--accent3)}
+.tr{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.25);color:var(--danger)}
+.ts{background:var(--s3);border-color:var(--b1);color:var(--muted2)}
+.etf-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+@media(max-width:420px){.etf-metrics{grid-template-columns:repeat(2,1fr)}}
+.em{background:var(--s1);border-radius:8px;padding:8px 10px;border:1px solid var(--b1)}
+.em-label{font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
+.em-val{font-size:13px;font-weight:500;font-family:var(--mono)}
+.etf-note{font-size:11px;color:var(--muted2);font-style:italic;margin-top:8px;line-height:1.5;padding-top:8px;border-top:1px solid var(--b1)}
+
+/* CHARTS SECTION */
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+@media(max-width:560px){.charts-grid{grid-template-columns:1fr}}
+.chart-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:18px}
+.chart-title{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:16px}
+.donut-wrap{position:relative;width:140px;height:140px;margin:0 auto 16px}
+canvas.donut{display:block}
+.donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.donut-center-val{font-family:var(--mono);font-size:14px;font-weight:500;line-height:1}
+.donut-center-lbl{font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:3px}
+.legend-list{display:flex;flex-direction:column;gap:6px}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:12px}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.legend-name{flex:1;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.legend-val{font-family:var(--mono);font-size:11px;color:var(--text);text-align:right;min-width:34px}
+
+/* BAR CHART */
+.bar-chart{display:flex;flex-direction:column;gap:8px}
+.bar-row-chart{display:flex;align-items:center;gap:8px}
+.bar-label-chart{font-size:11px;color:var(--muted2);min-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}
+.bar-track-chart{flex:1;height:8px;background:var(--s3);border-radius:4px;overflow:hidden}
+.bar-fill-chart{height:100%;border-radius:4px;transition:width .5s ease}
+.bar-val-chart{font-family:var(--mono);font-size:10px;min-width:30px;text-align:right;color:var(--muted2)}
+
+/* RISK CARD */
+.risk-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:20px;margin-bottom:16px}
+.risk-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.risk-badge{font-size:11px;font-weight:500;padding:5px 14px;border-radius:20px;font-family:var(--mono)}
+.risk-score-wrap{flex:1}
+.risk-track{height:8px;background:var(--s3);border-radius:4px;overflow:hidden;position:relative}
+.risk-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.risk-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);font-family:var(--mono);margin-top:4px}
+.risk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+@media(max-width:480px){.risk-grid{grid-template-columns:1fr 1fr}}
+.risk-metric{background:var(--s2);border-radius:var(--r);padding:12px;text-align:center}
+.risk-metric-lbl{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:4px}
+.risk-metric-val{font-size:16px;font-weight:500;font-family:var(--mono)}
+.risk-comment{font-size:13px;color:var(--muted2);line-height:1.7;padding:14px;background:var(--s2);border-radius:var(--r);border-left:3px solid var(--accent)}
+
+/* PAC SUMMARY */
+.pac-summary{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:20px;margin-top:20px;margin-bottom:16px}
+.pac-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--b1);font-size:13px;gap:8px}
+.pac-row:last-child{border-bottom:none}
+.pac-index{color:var(--muted2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.pac-ticker{font-family:var(--mono);font-size:12px;color:var(--text);margin:0 8px;flex-shrink:0}
+.pac-asset-type{font-size:10px;padding:2px 6px;border-radius:4px;margin-right:4px}
+.pac-detail{font-family:var(--mono);font-size:12px;text-align:right;white-space:nowrap;flex-shrink:0}
+.pac-total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0 4px;border-top:1px solid var(--b2);margin-top:6px}
+.pac-total-label{font-family:var(--display);font-size:14px;font-weight:700}
+.pac-total-val{font-family:var(--mono);font-size:22px;font-weight:500;color:var(--accent)}
+.resto-info{font-size:11px;color:var(--muted);margin-top:6px;font-family:var(--mono)}
+
+/* LOADING */
+.loading-wrap{padding:60px 0;text-align:center}
+.spinner{width:36px;height:36px;border:2px solid var(--b2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-msg{font-size:13px;color:var(--muted2);font-family:var(--mono)}
+.progress-bar{height:2px;background:var(--b1);border-radius:1px;margin-top:20px;overflow:hidden;width:200px;margin-left:auto;margin-right:auto}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:1px;animation:prog 2s ease-in-out infinite}
+@keyframes prog{0%{width:0;margin-left:0}60%{width:65%;margin-left:10%}100%{width:0;margin-left:100%}}
+
+/* EXPORT */
+.export-block{margin-top:20px}
+.export-text{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px;font-family:var(--mono);font-size:11px;color:var(--muted2);line-height:1.9;white-space:pre-wrap;max-height:260px;overflow-y:auto}
+.export-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+
+/* TOAST */
+.save-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--s3);border:1px solid var(--accent);border-radius:var(--r);padding:12px 24px;font-size:13px;color:var(--accent);font-family:var(--mono);transition:transform .3s;z-index:100;white-space:nowrap}
+.save-toast.show{transform:translateX(-50%) translateY(0)}
+
+/* ALERT */
+.alert{border-radius:var(--r);padding:10px 14px;font-size:12px;line-height:1.6;margin-bottom:12px;display:flex;gap:10px;align-items:flex-start}
+.alert-warn{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);color:#fbbf24}
+.alert-success{background:rgba(110,231,183,.07);border:1px solid rgba(110,231,183,.2);color:#6ee7b7}
+.alert-info{background:rgba(129,140,248,.07);border:1px solid rgba(129,140,248,.2);color:#a5b4fc}
+
+.screen{display:none;animation:fadeIn .2s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+
+.fx-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--b1);font-size:12px}
+.fx-row:last-child{border-bottom:none}
+.fx-flag{font-size:16px;width:24px;text-align:center;flex-shrink:0}
+.fx-name{flex:1;color:var(--muted2)}
+.fx-bar{flex:2;height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.fx-fill{height:100%;border-radius:3px}
+.fx-val{font-family:var(--mono);font-size:11px;min-width:34px;text-align:right}
+
+.section-divider{font-family:var(--display);font-size:18px;font-weight:700;margin:28px 0 16px;display:flex;align-items:center;gap:12px;color:var(--text)}
+.section-divider::after{content:'';flex:1;height:1px;background:var(--b1)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo-line"><div class="logo-dot"></div><span class="logo-text">PAC Builder · v3.0</span></div>
+  <h1>Costruisci il tuo<br><em>portafoglio ETF</em></h1>
+  <p class="subtitle">Scegli gli indici tra azionario, obbligazionario e alternativi. Imposta i pesi, inserisci il budget e ottieni ETF, grafici e analisi del rischio.</p>
+</header>
+
+<div class="stepper" id="stepper">
+  <div class="step-item active" id="dot-1" onclick="goTo(1)"><div class="step-num">1</div><span class="step-label">Budget</span></div>
+  <div class="step-item" id="dot-2" onclick="goTo(2)"><div class="step-num">2</div><span class="step-label">Indici</span></div>
+  <div class="step-item" id="dot-3" onclick="goTo(3)"><div class="step-num">3</div><span class="step-label">Pesi</span></div>
+  <div class="step-item" id="dot-4" onclick="goTo(4)"><div class="step-num">4</div><span class="step-label">Risultati</span></div>
+</div>
+
+<!-- STEP 1 -->
+<div class="screen active" id="screen-1">
+  <div class="card">
+    <div class="card-title">Budget mensile</div>
+    <div class="budget-field">
+      <span class="currency">€</span>
+      <input class="budget-input" type="number" id="budget" value="500" min="50" max="50000" step="10" oninput="onBudget()">
+      <span style="font-size:12px;color:var(--muted);font-family:var(--mono)">/ mese</span>
+    </div>
+    <div class="budget-presets">
+      <button class="preset-btn" onclick="setBudget(200)">€200</button>
+      <button class="preset-btn active" onclick="setBudget(500)">€500</button>
+      <button class="preset-btn" onclick="setBudget(750)">€750</button>
+      <button class="preset-btn" onclick="setBudget(1000)">€1.000</button>
+      <button class="preset-btn" onclick="setBudget(2000)">€2.000</button>
+      <button class="preset-btn" onclick="setBudget(5000)">€5.000</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Broker</div>
+    <div class="broker-grid">
+      <div class="broker-pill selected" data-broker="fineco" onclick="setBroker(this)"><div class="promo-dot"></div>Fineco (Replay)</div>
+      <div class="broker-pill" data-broker="trade-republic" onclick="setBroker(this)">Trade Republic</div>
+      <div class="broker-pill" data-broker="degiro" onclick="setBroker(this)">DEGIRO</div>
+      <div class="broker-pill" data-broker="directa" onclick="setBroker(this)">Directa SIM</div>
+      <div class="broker-pill" data-broker="ibkr" onclick="setBroker(this)">Interactive Brokers</div>
+    </div>
+    <div id="broker-info" style="margin-top:12px"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Preferenze ETF</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px"><input type="checkbox" id="pref-acc" checked style="accent-color:var(--accent);width:15px;height:15px"><span>Solo <strong>accumulazione</strong></span></label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px"><input type="checkbox" id="pref-price" checked style="accent-color:var(--accent);width:15px;height:15px"><span>Priorità prezzi <strong>accessibili</strong> per il PAC</span></label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px"><input type="checkbox" id="pref-ter" checked style="accent-color:var(--accent);width:15px;height:15px"><span>Priorità <strong>TER basso</strong></span></label>
+    </div>
+  </div>
+  <div class="nav-row"><div></div><button class="btn btn-primary" onclick="goTo(2)">Scegli indici →</button></div>
+</div>
+
+<!-- STEP 2 -->
+<div class="screen" id="screen-2">
+  <div class="card">
+    <div class="card-title">Indici disponibili</div>
+    <div class="cat-filters" id="cat-filters"></div>
+    <div id="index-grid"></div>
+    <div class="sel-counter">
+      <span>Selezionati: <span class="count" id="sel-count">0</span> indici</span>
+      <button class="clear-btn" onclick="clearSel()">Azzera</button>
+    </div>
+  </div>
+  <div class="nav-row">
+    <button class="btn btn-ghost" onclick="goTo(1)">← Indietro</button>
+    <button class="btn btn-primary" id="btn-2-3" disabled onclick="goTo(3)">Imposta pesi →</button>
+  </div>
+</div>
+
+<!-- STEP 3 -->
+<div class="screen" id="screen-3">
+  <div class="card">
+    <div class="card-title">Pesi del portafoglio</div>
+    <div id="weight-rows"></div>
+    <div class="wt-bar" style="margin-top:10px"><div class="wt-bar-fill" id="wt-bar-fill"></div></div>
+    <div class="weight-total-row">
+      <span style="color:var(--muted);font-family:var(--mono);font-size:12px">Totale allocato</span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="auto-balance-btn" onclick="autoBalance()">Bilancia al 90%</button>
+        <span id="wt-total" style="font-family:var(--mono);font-size:16px;font-weight:500">0%</span>
+      </div>
+    </div>
+  </div>
+  <div class="tip-box">
+    <svg width="14" height="14" style="flex-shrink:0;color:var(--accent);margin-top:1px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <div>Lascia un <strong style="color:var(--text)">5–10% non allocato</strong> come cuscinetto per gestire gli arrotondamenti a quote intere. Puoi digitare la percentuale direttamente nel campo numerico.</div>
+  </div>
+  <div class="nav-row">
+    <button class="btn btn-ghost" onclick="goTo(2)">← Indietro</button>
+    <button class="btn btn-primary" id="btn-3-4" onclick="runSearch()">Cerca ETF →</button>
+  </div>
+</div>
+
+<!-- STEP 4 -->
+<div class="screen" id="screen-4">
+  <div id="results-area"></div>
+  <div class="nav-row" style="margin-top:32px">
+    <button class="btn btn-ghost" onclick="goTo(3)">← Modifica pesi</button>
+    <button class="btn btn-primary" onclick="goTo(1)">Nuovo portafoglio</button>
+  </div>
+</div>
+
+</div>
+<div class="save-toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════
+// CATEGORIES
+// ══════════════════════════════════════════════════════════════
+const CAT = {
+  globale:  {label:'Globale',           color:'#818cf8', assetType:'equity'},
+  usa:      {label:'USA',               color:'#6ee7b7', assetType:'equity'},
+  europa:   {label:'Europa',            color:'#34d399', assetType:'equity'},
+  em:       {label:'Mercati Emergenti', color:'#f59e0b', assetType:'equity'},
+  asia:     {label:'Asia Sviluppata',   color:'#c084fc', assetType:'equity'},
+  us_sec:   {label:'Settoriali USA',    color:'#6ee7b7', assetType:'equity'},
+  eu_sec:   {label:'Settoriali Europa', color:'#34d399', assetType:'equity'},
+  factor:   {label:'Fattoriali World',  color:'#f472b6', assetType:'equity'},
+  bond_gov: {label:'Obblig. Governativi',color:'#38bdf8',assetType:'bond'},
+  bond_corp:{label:'Obblig. Corporate', color:'#22d3ee', assetType:'bond'},
+  bond_em:  {label:'Obblig. Emergenti', color:'#86efac', assetType:'bond'},
+  theme:    {label:'Tematici & Commodity',color:'#fb923c',assetType:'mixed'},
+};
+
+// ══════════════════════════════════════════════════════════════
+// INDICES
+// ══════════════════════════════════════════════════════════════
+const IDX = [
+  // Globale Azionario
+  {id:'msciworld',    name:'MSCI World',               cat:'globale', hedge:false, geo:{usa:68,eu:16,asia:8,em:8},  sector:{tech:23,fin:15,health:12,cons:11,ind:10,other:29}},
+  {id:'msciworldh',   name:'MSCI World EUR Hedged',     cat:'globale', hedge:true,  geo:{usa:68,eu:16,asia:8,em:8},  sector:{tech:23,fin:15,health:12,cons:11,ind:10,other:29}},
+  {id:'msciaci',      name:'MSCI ACWI',                 cat:'globale', hedge:false, geo:{usa:61,eu:14,asia:7,em:18}, sector:{tech:21,fin:15,health:11,cons:11,ind:10,other:32}},
+  {id:'msciimiacwi',  name:'MSCI ACWI IMI',             cat:'globale', hedge:false, geo:{usa:60,eu:14,asia:7,em:19}, sector:{tech:21,fin:15,health:11,cons:11,ind:10,other:32}},
+  // USA
+  {id:'sp500',        name:'S&P 500',                   cat:'usa',    hedge:false, geo:{usa:100},                    sector:{tech:29,health:13,fin:13,cons:11,ind:9,other:25}},
+  {id:'sp500h',       name:'S&P 500 EUR Hedged',        cat:'usa',    hedge:true,  geo:{usa:100},                    sector:{tech:29,health:13,fin:13,cons:11,ind:9,other:25}},
+  {id:'sp500ew',      name:'S&P 500 Equal Weight',      cat:'usa',    hedge:false, geo:{usa:100},                    sector:{tech:14,health:14,fin:13,cons:12,ind:11,other:36}},
+  {id:'nasdaq',       name:'Nasdaq-100',                cat:'usa',    hedge:false, geo:{usa:100},                    sector:{tech:50,cons:16,health:7,ind:5,other:22}},
+  {id:'nasdaqh',      name:'Nasdaq-100 EUR Hedged',     cat:'usa',    hedge:true,  geo:{usa:100},                    sector:{tech:50,cons:16,health:7,ind:5,other:22}},
+  {id:'russell2000',  name:'Russell 2000 Small Cap',    cat:'usa',    hedge:false, geo:{usa:100},                    sector:{fin:16,health:16,ind:15,tech:13,other:40}},
+  // Europa
+  {id:'europe',       name:'MSCI Europe',               cat:'europa', hedge:false, geo:{eu:100},                     sector:{fin:18,health:14,ind:13,cons:11,energy:7,other:37}},
+  {id:'stoxx600',     name:'STOXX Europe 600',          cat:'europa', hedge:false, geo:{eu:100},                     sector:{fin:18,health:14,ind:13,cons:11,energy:7,other:37}},
+  {id:'stoxx50',      name:'Euro Stoxx 50',             cat:'europa', hedge:false, geo:{eu:100},                     sector:{fin:20,health:12,ind:12,cons:10,energy:8,other:38}},
+  {id:'ftse100',      name:'FTSE 100 (UK)',             cat:'europa', hedge:false, geo:{eu:100},                     sector:{energy:16,fin:18,health:12,mat:9,cons:10,other:35}},
+  // Emergenti
+  {id:'emdivisa',     name:'MSCI EM IMI',               cat:'em',     hedge:false, geo:{asia:70,latam:10,eu:5,other:15}, sector:{tech:23,fin:21,cons:13,energy:6,mat:7,other:30}},
+  {id:'emasia',       name:'MSCI EM Asia',              cat:'em',     hedge:false, geo:{asia:90,other:10},            sector:{tech:27,fin:22,cons:14,other:37}},
+  {id:'emlatam',      name:'MSCI EM Latin America',     cat:'em',     hedge:false, geo:{latam:100},                   sector:{mat:17,fin:17,energy:15,cons:14,other:37}},
+  {id:'brazil',       name:'MSCI Brazil',               cat:'em',     hedge:false, geo:{latam:100},                   sector:{fin:24,energy:18,mat:14,cons:13,other:31}},
+  {id:'india',        name:'MSCI India',                cat:'em',     hedge:false, geo:{asia:100},                    sector:{fin:25,tech:18,cons:14,health:8,other:35}},
+  {id:'china',        name:'MSCI China',                cat:'em',     hedge:false, geo:{asia:100},                    sector:{cons:26,fin:16,tech:15,health:7,other:36}},
+  {id:'korea',        name:'MSCI Korea',                cat:'em',     hedge:false, geo:{asia:100},                    sector:{tech:35,cons:13,fin:10,mat:9,other:33}},
+  {id:'taiwan',       name:'MSCI Taiwan',               cat:'em',     hedge:false, geo:{asia:100},                    sector:{tech:64,fin:13,other:23}},
+  // Asia Sviluppata
+  {id:'japan',        name:'MSCI Japan',                cat:'asia',   hedge:false, geo:{asia:100},                    sector:{ind:21,cons:18,tech:14,health:8,fin:10,other:29}},
+  {id:'pacific',      name:'MSCI Pacific ex-Japan',     cat:'asia',   hedge:false, geo:{asia:100},                    sector:{fin:33,mat:12,health:10,energy:8,other:37}},
+  {id:'asiapac',      name:'MSCI Asia Pacific',         cat:'asia',   hedge:false, geo:{asia:100},                    sector:{fin:25,tech:15,ind:12,health:9,other:39}},
+  // Settoriali USA
+  {id:'us_tech',      name:'S&P 500 IT / Tech',         cat:'us_sec', hedge:false, geo:{usa:100},                    sector:{tech:100}},
+  {id:'us_health',    name:'S&P 500 Health Care',       cat:'us_sec', hedge:false, geo:{usa:100},                    sector:{health:100}},
+  {id:'us_fin',       name:'S&P 500 Financials',        cat:'us_sec', hedge:false, geo:{usa:100},                    sector:{fin:100}},
+  {id:'us_energy',    name:'S&P 500 Energy',            cat:'us_sec', hedge:false, geo:{usa:100},                    sector:{energy:100}},
+  {id:'us_cons_disc', name:'S&P 500 Cons. Discretionary',cat:'us_sec',hedge:false, geo:{usa:100},                   sector:{cons:100}},
+  {id:'us_cons_stap', name:'S&P 500 Cons. Staples',     cat:'us_sec', hedge:false, geo:{usa:100},                    sector:{cons:100}},
+  {id:'us_ind',       name:'S&P 500 Industrials',       cat:'us_sec', hedge:false, geo:{usa:100},                    sector:{ind:100}},
+  {id:'us_mat',       name:'S&P 500 Materials',         cat:'us_sec', hedge:false, geo:{usa:100},                    sector:{mat:100}},
+  {id:'us_util',      name:'S&P 500 Utilities',         cat:'us_sec', hedge:false, geo:{usa:100},                    sector:{util:100}},
+  {id:'us_re',        name:'S&P 500 Real Estate',       cat:'us_sec', hedge:false, geo:{usa:100},                    sector:{re:100}},
+  {id:'us_comm',      name:'S&P 500 Communication',     cat:'us_sec', hedge:false, geo:{usa:100},                    sector:{tech:100}},
+  // Settoriali Europa
+  {id:'eu_tech',      name:'STOXX EU 600 Technology',   cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{tech:100}},
+  {id:'eu_health',    name:'STOXX EU 600 Health Care',  cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{health:100}},
+  {id:'eu_banks',     name:'STOXX EU 600 Banks',        cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{fin:100}},
+  {id:'eu_energy',    name:'STOXX EU 600 Oil & Gas',    cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{energy:100}},
+  {id:'eu_auto',      name:'STOXX EU 600 Auto',         cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{ind:100}},
+  {id:'utilities',    name:'STOXX EU 600 Utilities',    cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{util:100}},
+  {id:'eu_ind',       name:'STOXX EU 600 Industrials',  cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{ind:100}},
+  {id:'eu_re',        name:'STOXX EU 600 Real Estate',  cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{re:100}},
+  {id:'eu_food',      name:'STOXX EU 600 Food & Bev',   cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{cons:100}},
+  {id:'eu_telco',     name:'STOXX EU 600 Telecom',      cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{tech:100}},
+  {id:'eu_travel',    name:'STOXX EU 600 Travel',       cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{cons:100}},
+  {id:'eu_defense',   name:'STOXX EU Defence',          cat:'eu_sec', hedge:false, geo:{eu:100},                     sector:{ind:100}},
+  // Fattoriali
+  {id:'momentum',     name:'MSCI World Momentum',       cat:'factor', hedge:false, geo:{usa:70,eu:15,asia:7,em:8},   sector:{tech:28,health:13,fin:14,other:45}},
+  {id:'quality',      name:'MSCI World Quality',        cat:'factor', hedge:false, geo:{usa:65,eu:18,asia:8,em:9},   sector:{tech:25,health:15,fin:12,other:48}},
+  {id:'value',        name:'MSCI World Value',          cat:'factor', hedge:false, geo:{usa:55,eu:22,asia:10,em:13}, sector:{fin:22,energy:12,health:11,ind:11,other:44}},
+  {id:'minvol',       name:'MSCI World Min Volatility', cat:'factor', hedge:false, geo:{usa:55,eu:22,asia:12,em:11}, sector:{util:12,health:14,cons:12,fin:12,other:50}},
+  {id:'multifactor',  name:'MSCI World Multifactor',    cat:'factor', hedge:false, geo:{usa:60,eu:20,asia:10,em:10}, sector:{tech:20,fin:15,health:12,other:53}},
+  {id:'smallcap',     name:'MSCI World Small Cap',      cat:'factor', hedge:false, geo:{usa:60,eu:20,asia:10,em:10}, sector:{ind:16,fin:14,cons:12,health:11,tech:11,other:36}},
+  {id:'dividend',     name:'MSCI World High Dividend',  cat:'factor', hedge:false, geo:{usa:50,eu:25,asia:12,em:13}, sector:{fin:20,health:12,energy:11,util:10,other:47}},
+  {id:'esg',          name:'MSCI World ESG Screened',   cat:'factor', hedge:false, geo:{usa:65,eu:17,asia:8,em:10},  sector:{tech:24,fin:14,health:13,other:49}},
+  // OBBLIGAZIONARIO — Governativi
+  {id:'eur_gov_agg',  name:'Euro Gov. Bond Aggregate',  cat:'bond_gov',hedge:false,geo:{eu:100}, sector:{bond:100}, isBond:true, duration:7.5,  yield:3.1},
+  {id:'eur_gov_short',name:'Euro Gov. Bond 1-3Y',       cat:'bond_gov',hedge:false,geo:{eu:100}, sector:{bond:100}, isBond:true, duration:2.0,  yield:3.0},
+  {id:'eur_gov_long', name:'Euro Gov. Bond 7-10Y',      cat:'bond_gov',hedge:false,geo:{eu:100}, sector:{bond:100}, isBond:true, duration:8.5,  yield:3.4},
+  {id:'us_treasury',  name:'US Treasury Bond USD',      cat:'bond_gov',hedge:false,geo:{usa:100},sector:{bond:100}, isBond:true, duration:6.0,  yield:4.5},
+  {id:'us_treasury_h',name:'US Treasury EUR Hedged',    cat:'bond_gov',hedge:true, geo:{usa:100},sector:{bond:100}, isBond:true, duration:6.0,  yield:2.8},
+  {id:'global_gov',   name:'Global Gov. Bond EUR Hdg',  cat:'bond_gov',hedge:true, geo:{usa:45,eu:30,asia:15,other:10},sector:{bond:100},isBond:true,duration:7.0,yield:3.2},
+  {id:'overnight',    name:'€STR / Overnight Rate',     cat:'bond_gov',hedge:false,geo:{eu:100}, sector:{bond:100}, isBond:true, duration:0.05, yield:3.0},
+  // OBBLIGAZIONARIO — Corporate
+  {id:'eur_corp',     name:'EUR Corporate Bond',        cat:'bond_corp',hedge:false,geo:{eu:100},sector:{bond:100}, isBond:true, duration:5.5,  yield:3.8},
+  {id:'eur_corp_short',name:'EUR Corp. Bond 1-5Y',      cat:'bond_corp',hedge:false,geo:{eu:100},sector:{bond:100}, isBond:true, duration:2.8,  yield:3.5},
+  {id:'eur_hy',       name:'EUR High Yield Bond',       cat:'bond_corp',hedge:false,geo:{eu:100},sector:{bond:100}, isBond:true, duration:3.5,  yield:6.2},
+  {id:'us_corp',      name:'USD Corporate Bond EUR Hdg',cat:'bond_corp',hedge:true, geo:{usa:100},sector:{bond:100},isBond:true, duration:7.0,  yield:3.6},
+  {id:'us_hy',        name:'USD High Yield EUR Hedged', cat:'bond_corp',hedge:true, geo:{usa:100},sector:{bond:100},isBond:true, duration:4.0,  yield:5.2},
+  {id:'global_agg',   name:'Global Aggregate EUR Hdg',  cat:'bond_corp',hedge:true, geo:{usa:45,eu:30,asia:15,other:10},sector:{bond:100},isBond:true,duration:6.5,yield:3.3},
+  // OBBLIGAZIONARIO — Emergenti
+  {id:'em_bond_usd',  name:'EM Bond USD Hard Currency', cat:'bond_em', hedge:false,geo:{asia:35,latam:30,eu:15,other:20},sector:{bond:100},isBond:true,duration:7.0,yield:6.5},
+  {id:'em_bond_eur',  name:'EM Bond EUR Hedged',        cat:'bond_em', hedge:true, geo:{asia:35,latam:30,eu:15,other:20},sector:{bond:100},isBond:true,duration:7.0,yield:4.5},
+  // Tematici
+  {id:'clean',        name:'Clean Energy',              cat:'theme',  hedge:false, geo:{usa:50,eu:25,asia:20,other:5},  sector:{util:40,ind:30,tech:20,other:10}},
+  {id:'ai',           name:'Artificial Intelligence',   cat:'theme',  hedge:false, geo:{usa:65,asia:20,eu:10,other:5},  sector:{tech:100}},
+  {id:'defense_glb',  name:'Global Defence',            cat:'theme',  hedge:false, geo:{usa:45,eu:35,other:20},         sector:{ind:100}},
+  {id:'gold',         name:'Oro Fisico (ETC)',           cat:'theme',  hedge:false, geo:{global:100},                    sector:{commodity:100}, isCommodity:true},
+  {id:'silver',       name:'Argento Fisico (ETC)',       cat:'theme',  hedge:false, geo:{global:100},                    sector:{commodity:100}, isCommodity:true},
+];
+
+// ══════════════════════════════════════════════════════════════
+// ETF DB
+// ══════════════════════════════════════════════════════════════
+const DB = {
+  msciworld:    [{t:'XDWD',n:'Xtrackers MSCI World Swap UCITS ETF 1C',i:'IE00BJ0KDQ92',e:'Xtrackers',ter:0.15,p:8.50, acc:true, r:'swap',  fin:true},
+                 {t:'EUNL',n:'iShares Core MSCI World UCITS ETF USD Acc',i:'IE00B4L5Y983',e:'iShares',ter:0.20,p:111.87,acc:true,r:'fisica',fin:true}],
+  msciworldh:   [{t:'HEDG',n:'iShares MSCI World EUR Hedged UCITS ETF Acc',i:'IE00B80QFQ27',e:'iShares',ter:0.55,p:55,acc:true,r:'fisica',fin:true}],
+  msciaci:      [{t:'IUSQ',n:'iShares MSCI ACWI UCITS ETF USD Acc',i:'IE00B6R52259',e:'iShares',ter:0.20,p:80,acc:true,r:'fisica',fin:true},
+                 {t:'ACWO',n:'Amundi MSCI ACWI UCITS ETF Acc',i:'LU1681043752',e:'Amundi',ter:0.15,p:12,acc:true,r:'swap',fin:true}],
+  msciimiacwi:  [{t:'IUSQ',n:'iShares MSCI ACWI UCITS ETF USD Acc',i:'IE00B6R52259',e:'iShares',ter:0.20,p:80,acc:true,r:'fisica',fin:true}],
+  sp500:        [{t:'XSPX',n:'Xtrackers S&P 500 UCITS ETF 1C',i:'LU0490618542',e:'Xtrackers',ter:0.07,p:117.05,acc:true,r:'swap',fin:true},
+                 {t:'IUSA',n:'iShares Core S&P 500 UCITS ETF USD Dist',i:'IE0031442068',e:'iShares',ter:0.07,p:42,acc:false,r:'fisica',fin:true}],
+  sp500h:       [{t:'500H',n:'Amundi S&P 500 EUR Hedged UCITS ETF Acc',i:'LU1681049109',e:'Amundi',ter:0.28,p:18.5,acc:true,r:'swap',fin:true},
+                 {t:'IUSE',n:'iShares S&P 500 EUR Hedged UCITS ETF Acc',i:'IE00B3ZW0K18',e:'iShares',ter:0.20,p:139.73,acc:true,r:'fisica',fin:true}],
+  sp500ew:      [{t:'EWSP',n:'iShares S&P 500 Equal Weight UCITS ETF Acc',i:'IE000MLMNYS0',e:'iShares',ter:0.20,p:6.12,acc:true,r:'fisica',fin:true}],
+  nasdaq:       [{t:'XNAS',n:'Xtrackers Nasdaq 100 UCITS ETF 1C',i:'IE00BMFKG444',e:'Xtrackers',ter:0.20,p:49.5,acc:true,r:'swap',fin:true},
+                 {t:'CNDX',n:'iShares Nasdaq 100 UCITS ETF USD Acc',i:'IE00B53SZB19',e:'iShares',ter:0.33,p:140,acc:true,r:'fisica',fin:true}],
+  nasdaqh:      [{t:'USTH',n:'Amundi Core Nasdaq-100 EUR Hedged Acc',i:'LU1954152853',e:'Amundi',ter:0.20,p:18.0,acc:true,r:'swap',fin:true},
+                 {t:'XMLH',n:'Xtrackers Nasdaq 100 EUR Hedged UCITS ETF',i:'LU1681038599',e:'Xtrackers',ter:0.20,p:13,acc:true,r:'swap',fin:true}],
+  russell2000:  [{t:'IUS2',n:'iShares Russell 2000 UCITS ETF USD Acc',i:'IE00B3RBWM25',e:'iShares',ter:0.35,p:28,acc:true,r:'fisica',fin:true}],
+  europe:       [{t:'XESC',n:'Xtrackers MSCI Europe UCITS ETF Acc',i:'LU0274209237',e:'Xtrackers',ter:0.12,p:44,acc:true,r:'fisica',fin:true},
+                 {t:'SMEA',n:'iShares Core MSCI Europe UCITS ETF EUR Acc',i:'IE00B4K48X80',e:'iShares',ter:0.12,p:94.79,acc:true,r:'fisica',fin:true}],
+  stoxx600:     [{t:'XESC',n:'Xtrackers MSCI Europe UCITS ETF Acc',i:'LU0274209237',e:'Xtrackers',ter:0.12,p:44,acc:true,r:'fisica',fin:true}],
+  stoxx50:      [{t:'DBXE',n:'Xtrackers Euro Stoxx 50 Swap UCITS ETF 1C',i:'LU0274211480',e:'Xtrackers',ter:0.09,p:56,acc:true,r:'swap',fin:true},
+                 {t:'EXW1',n:'iShares Core EURO STOXX 50 UCITS ETF EUR Acc',i:'IE00B53L3W79',e:'iShares',ter:0.10,p:51,acc:true,r:'fisica',fin:true}],
+  ftse100:      [{t:'XDUK',n:'Xtrackers FTSE 100 UCITS ETF 1C',i:'LU0292097317',e:'Xtrackers',ter:0.09,p:13,acc:true,r:'swap',fin:true}],
+  emdivisa:     [{t:'EIMI',n:'iShares Core MSCI EM IMI UCITS ETF USD Acc',i:'IE00BKM4GZ66',e:'iShares',ter:0.18,p:40.77,acc:true,r:'fisica',fin:true},
+                 {t:'AEME',n:'Amundi MSCI Emerging Markets II UCITS ETF Acc',i:'LU1681045370',e:'Amundi',ter:0.14,p:12,acc:true,r:'swap',fin:true}],
+  emasia:       [{t:'EIMI',n:'iShares Core MSCI EM IMI (Asia ~70%)',i:'IE00BKM4GZ66',e:'iShares',ter:0.18,p:40.77,acc:true,r:'fisica',fin:true}],
+  emlatam:      [{t:'LTAM',n:'iShares MSCI EM Latin America UCITS ETF Acc',i:'IE00B27YCK28',e:'iShares',ter:0.74,p:18,acc:true,r:'fisica',fin:true}],
+  brazil:       [{t:'BRA', n:'Amundi MSCI Brazil UCITS ETF Acc',i:'LU1900066207',e:'Amundi',ter:0.65,p:21.52,acc:true,r:'swap',fin:true},
+                 {t:'XMBR',n:'Xtrackers MSCI Brazil UCITS ETF 1C',i:'LU0292109344',e:'Xtrackers',ter:0.65,p:14,acc:true,r:'swap',fin:true}],
+  india:        [{t:'NDIA',n:'iShares MSCI India UCITS ETF USD Acc',i:'IE00BZCQB185',e:'iShares',ter:0.65,p:38,acc:true,r:'fisica',fin:true},
+                 {t:'XINR',n:'Xtrackers MSCI India Swap UCITS ETF 1C',i:'LU0514695690',e:'Xtrackers',ter:0.65,p:32,acc:true,r:'swap',fin:true}],
+  china:        [{t:'XCSH',n:'Xtrackers MSCI China UCITS ETF 1C',i:'IE00BJ38QD84',e:'Xtrackers',ter:0.35,p:9,acc:true,r:'swap',fin:true},
+                 {t:'ICHN',n:'iShares MSCI China UCITS ETF USD Acc',i:'IE00BJ5JPM79',e:'iShares',ter:0.40,p:5.5,acc:true,r:'fisica',fin:true}],
+  korea:        [{t:'XKOR',n:'Xtrackers MSCI Korea Swap UCITS ETF',i:'LU0292100046',e:'Xtrackers',ter:0.65,p:22,acc:true,r:'swap',fin:true}],
+  taiwan:       [{t:'ITWN',n:'iShares MSCI Taiwan UCITS ETF USD Acc',i:'IE00B0M63623',e:'iShares',ter:0.74,p:28,acc:false,r:'fisica',fin:true}],
+  japan:        [{t:'XZMJ',n:'Xtrackers MSCI Japan ESG UCITS ETF 1C',i:'IE00BG36TC12',e:'Xtrackers',ter:0.15,p:24.9,acc:true,r:'fisica',fin:true},
+                 {t:'IJPA',n:'iShares MSCI Japan UCITS ETF USD Acc',i:'IE00B53QG562',e:'iShares',ter:0.12,p:16,acc:true,r:'fisica',fin:true}],
+  pacific:      [{t:'XZPD',n:'Xtrackers MSCI Pacific ex Japan Swap ETF',i:'LU0322252681',e:'Xtrackers',ter:0.20,p:24,acc:true,r:'swap',fin:true}],
+  asiapac:      [{t:'XZPD',n:'Xtrackers MSCI Pacific ex Japan Swap ETF',i:'LU0322252681',e:'Xtrackers',ter:0.20,p:24,acc:true,r:'swap',fin:true}],
+  us_tech:      [{t:'QDVE',n:'iShares S&P 500 IT Sector UCITS ETF USD Acc',i:'IE00B3WJKG14',e:'iShares',ter:0.15,p:42,acc:true,r:'fisica',fin:true}],
+  us_health:    [{t:'QDVH',n:'iShares S&P 500 Health Care Sector UCITS ETF',i:'IE00B43HR379',e:'iShares',ter:0.15,p:38,acc:true,r:'fisica',fin:true}],
+  us_fin:       [{t:'QDVF',n:'iShares S&P 500 Financials Sector UCITS ETF',i:'IE00B4JNQZ49',e:'iShares',ter:0.15,p:24,acc:true,r:'fisica',fin:true}],
+  us_energy:    [{t:'QDVP',n:'iShares S&P 500 Energy Sector UCITS ETF',i:'IE00B42NKQ00',e:'iShares',ter:0.15,p:19,acc:true,r:'fisica',fin:true}],
+  us_cons_disc: [{t:'QDVC',n:'iShares S&P 500 Cons. Disc. Sector UCITS ETF',i:'IE00B4KBD751',e:'iShares',ter:0.15,p:30,acc:true,r:'fisica',fin:true}],
+  us_cons_stap: [{t:'QDVG',n:'iShares S&P 500 Cons. Staples Sector UCITS ETF',i:'IE00B40B8R38',e:'iShares',ter:0.15,p:22,acc:true,r:'fisica',fin:true}],
+  us_ind:       [{t:'QDVI',n:'iShares S&P 500 Industrials Sector UCITS ETF',i:'IE00B4JNQZ49',e:'iShares',ter:0.15,p:32,acc:true,r:'fisica',fin:true}],
+  us_mat:       [{t:'QDVM',n:'iShares S&P 500 Materials Sector UCITS ETF',i:'IE00B4JNQZ56',e:'iShares',ter:0.15,p:21,acc:true,r:'fisica',fin:true}],
+  us_util:      [{t:'QDVU',n:'iShares S&P 500 Utilities Sector UCITS ETF',i:'IE00B3WJKG14',e:'iShares',ter:0.15,p:18,acc:true,r:'fisica',fin:true}],
+  us_re:        [{t:'QDVR',n:'iShares S&P 500 Real Estate Sector UCITS ETF',i:'IE00BSJCQV56',e:'iShares',ter:0.15,p:16,acc:true,r:'fisica',fin:true}],
+  us_comm:      [{t:'QDVT',n:'iShares S&P 500 Comm. Services Sector UCITS ETF',i:'IE00BKM4GY85',e:'iShares',ter:0.15,p:23,acc:true,r:'fisica',fin:true}],
+  eu_tech:      [{t:'EXV4',n:'iShares STOXX Europe 600 Technology (DE)',i:'DE000A0H08M3',e:'iShares',ter:0.47,p:55,acc:false,r:'fisica',fin:true}],
+  eu_health:    [{t:'XLHC',n:'Amundi MSCI Europe Health Care UCITS ETF',i:'LU1834985028',e:'Amundi',ter:0.25,p:35,acc:true,r:'swap',fin:true}],
+  eu_banks:     [{t:'XLFS',n:'Amundi STOXX Europe 600 Banks UCITS ETF Acc',i:'LU1834984807',e:'Amundi',ter:0.25,p:14,acc:true,r:'swap',fin:true}],
+  eu_energy:    [{t:'XLEN',n:'Amundi STOXX Europe 600 Oil & Gas UCITS ETF',i:'LU1834984989',e:'Amundi',ter:0.25,p:18,acc:true,r:'swap',fin:true}],
+  eu_auto:      [{t:'XLER',n:'Amundi STOXX Europe 600 Autos UCITS ETF Acc',i:'LU1834984393',e:'Amundi',ter:0.25,p:10,acc:true,r:'swap',fin:true}],
+  utilities:    [{t:'UTI', n:'Amundi STOXX Europe 600 Utilities UCITS ETF',i:'LU1834988864',e:'Amundi',ter:0.30,p:57.64,acc:true,r:'swap',fin:true}],
+  eu_ind:       [{t:'XLIN',n:'Amundi STOXX Europe 600 Industrials UCITS ETF',i:'LU1834986414',e:'Amundi',ter:0.25,p:26,acc:true,r:'swap',fin:true}],
+  eu_re:        [{t:'XERE',n:'Amundi STOXX Europe 600 Real Estate UCITS ETF',i:'LU1834987735',e:'Amundi',ter:0.25,p:12,acc:true,r:'swap',fin:true}],
+  eu_food:      [{t:'XLFP',n:'Amundi STOXX Europe 600 Food & Bev UCITS ETF',i:'LU1834986000',e:'Amundi',ter:0.25,p:40,acc:true,r:'swap',fin:true}],
+  eu_telco:     [{t:'XLTC',n:'Amundi STOXX Europe 600 Telecom UCITS ETF',i:'LU1834988450',e:'Amundi',ter:0.25,p:11,acc:true,r:'swap',fin:true}],
+  eu_travel:    [{t:'EXV5',n:'iShares STOXX Europe 600 Travel & Leisure (DE)',i:'DE000A0H08K7',e:'iShares',ter:0.47,p:25,acc:false,r:'fisica',fin:true}],
+  eu_defense:   [{t:'EPOL',n:'Amundi STOXX Europe Defence UCITS ETF Acc',i:'IE0009HF1MK5',e:'Amundi',ter:0.35,p:14,acc:true,r:'swap',fin:true}],
+  momentum:     [{t:'CBUH',n:'iShares MSCI World Momentum Factor Advanced Acc',i:'IE000L5NW549',e:'iShares',ter:0.25,p:6.82,acc:true,r:'fisica',fin:true},
+                 {t:'IWMO',n:'iShares MSCI World Momentum Factor UCITS ETF',i:'IE00BP3QZ825',e:'iShares',ter:0.30,p:62,acc:true,r:'fisica',fin:true}],
+  quality:      [{t:'IWQE',n:'iShares MSCI World Quality Factor Advanced Acc',i:'IE000U1MQKJ2',e:'iShares',ter:0.25,p:7.0,acc:true,r:'fisica',fin:true}],
+  value:        [{t:'CBUI',n:'iShares MSCI World Value Factor Advanced Acc',i:'IE000H1H16W5',e:'iShares',ter:0.25,p:7.06,acc:true,r:'fisica',fin:true}],
+  minvol:       [{t:'MVOL',n:'iShares MSCI World Min Volatility UCITS ETF',i:'IE00B8FHGS14',e:'iShares',ter:0.30,p:36,acc:true,r:'fisica',fin:true},
+                 {t:'XDEB',n:'Xtrackers MSCI World Min Volatility Swap ETF',i:'IE00BL25JP72',e:'Xtrackers',ter:0.25,p:18,acc:true,r:'swap',fin:true}],
+  multifactor:  [{t:'IBCZ',n:'iShares STOXX World Equity Multifactor UCITS ETF',i:'IE00BZ0PKT83',e:'iShares',ter:0.35,p:12.12,acc:true,r:'fisica',fin:true},
+                 {t:'FLXW',n:'Franklin STOXX World Equity Multifactor ETF',i:'IE00BF2B0K52',e:'Franklin',ter:0.25,p:14,acc:true,r:'fisica',fin:true}],
+  smallcap:     [{t:'CBUG',n:'iShares MSCI World Small Cap ESG Enhanced Acc',i:'IE000T9EOCL3',e:'iShares',ter:0.35,p:6.15,acc:true,r:'fisica',fin:true}],
+  dividend:     [{t:'IWDV',n:'iShares MSCI World Quality Dividend ESG Acc',i:'IE00BYYHSQ67',e:'iShares',ter:0.38,p:8.5,acc:true,r:'fisica',fin:true}],
+  esg:          [{t:'XZWL',n:'Xtrackers MSCI World Swap UCITS ETF ESG Acc',i:'IE00BL25JN58',e:'Xtrackers',ter:0.15,p:8,acc:true,r:'swap',fin:true}],
+  // BOND
+  eur_gov_agg:  [{t:'EGOV',n:'Amundi IS Core Euro Government Bond UCITS ETF Acc',i:'LU1437018598',e:'Amundi',ter:0.14,p:49.3,acc:true,r:'fisica',fin:true},
+                 {t:'DBXG',n:'Xtrackers II Eurozone Government Bond UCITS ETF',i:'LU0290357929',e:'Xtrackers',ter:0.15,p:215,acc:true,r:'swap',fin:true}],
+  eur_gov_short:[{t:'EXX6',n:'iShares eb.rexx Government Germany 1.5-2.5yr',i:'DE000A0Q4RZ9',e:'iShares',ter:0.15,p:120,acc:false,r:'fisica',fin:true},
+                 {t:'IBTS',n:'iShares $ Treasury Bond 1-3yr UCITS ETF EUR Hdg',i:'IE00B3VWN393',e:'iShares',ter:0.07,p:5.2,acc:true,r:'fisica',fin:true}],
+  eur_gov_long: [{t:'IBGL',n:'iShares Global Govt Bond UCITS ETF EUR Hedged Acc',i:'IE00B3F81K65',e:'iShares',ter:0.10,p:4.8,acc:true,r:'fisica',fin:true}],
+  us_treasury:  [{t:'IBTS',n:'iShares $ Treasury Bond 1-3yr UCITS ETF',i:'IE00B14X4S71',e:'iShares',ter:0.07,p:5.2,acc:false,r:'fisica',fin:true},
+                 {t:'IBTM',n:'iShares $ Treasury Bond 7-10yr UCITS ETF',i:'IE00B1FZS798',e:'iShares',ter:0.07,p:4.9,acc:false,r:'fisica',fin:true}],
+  us_treasury_h:[{t:'DTLA',n:'Xtrackers II US Treasuries EUR Hedged UCITS ETF',i:'LU1048314199',e:'Xtrackers',ter:0.15,p:155,acc:true,r:'swap',fin:true}],
+  global_gov:   [{t:'AGGH',n:'iShares Global Govt Bond UCITS ETF EUR Hedged Acc',i:'IE00B3F81K65',e:'iShares',ter:0.10,p:4.8,acc:true,r:'fisica',fin:true}],
+  overnight:    [{t:'XEON',n:'Xtrackers II EUR Overnight Rate Swap UCITS ETF 1C',i:'LU0290358497',e:'Xtrackers',ter:0.10,p:149,acc:true,r:'swap',fin:true},
+                 {t:'CSH2',n:'iShares € Cash UCITS ETF EUR Acc',i:'IE000RHYOR04',e:'iShares',ter:0.10,p:5.1,acc:true,r:'fisica',fin:true}],
+  eur_corp:     [{t:'IEAA',n:'iShares Core EUR Corp Bond UCITS ETF EUR Acc',i:'IE00BF11F565',e:'iShares',ter:0.09,p:5.3,acc:true,r:'fisica',fin:true},
+                 {t:'XBCE',n:'Xtrackers EUR Corporate Bond UCITS ETF',i:'LU0478205379',e:'Xtrackers',ter:0.12,p:164,acc:true,r:'swap',fin:true}],
+  eur_corp_short:[{t:'SE15',n:'iShares EUR Corp Bond 1-5yr UCITS ETF EUR Acc',i:'IE00B4L60045',e:'iShares',ter:0.20,p:5.1,acc:true,r:'fisica',fin:true}],
+  eur_hy:       [{t:'IHYG',n:'iShares € High Yield Corp Bond UCITS ETF EUR Dist',i:'IE00B66F4759',e:'iShares',ter:0.50,p:85,acc:false,r:'fisica',fin:true},
+                 {t:'XHYG',n:'Xtrackers EUR High Yield Corp Bond UCITS ETF',i:'LU0484635382',e:'Xtrackers',ter:0.20,p:115,acc:false,r:'swap',fin:true}],
+  us_corp:      [{t:'LQDE',n:'iShares USD Corp Bond UCITS ETF EUR Hedged Acc',i:'IE00BD8PGZ49',e:'iShares',ter:0.20,p:5.0,acc:true,r:'fisica',fin:true}],
+  us_hy:        [{t:'XZHY',n:'Xtrackers USD High Yield Corp Bond UCITS ETF',i:'IE0006YM7D84',e:'Xtrackers',ter:0.20,p:33,acc:true,r:'swap',fin:true}],
+  global_agg:   [{t:'AGGH',n:'iShares Global Aggregate Bond UCITS ETF EUR Hdg Acc',i:'IE00BDBRDM35',e:'iShares',ter:0.10,p:4.8,acc:true,r:'fisica',fin:true},
+                 {t:'XCO2',n:'Amundi Global Aggregate Bond 1-10Y UCITS ETF Acc',i:'LU1981859819',e:'Amundi',ter:0.10,p:19,acc:true,r:'fisica',fin:true}],
+  em_bond_usd:  [{t:'EMSA',n:'iShares JP Morgan $ EM Bond UCITS ETF USD Dist',i:'IE00B2NPKV68',e:'iShares',ter:0.45,p:90,acc:false,r:'fisica',fin:true}],
+  em_bond_eur:  [{t:'EMBE',n:'iShares JP Morgan EM Bond EUR Hedged UCITS ETF',i:'IE00BF553838',e:'iShares',ter:0.50,p:5.4,acc:true,r:'fisica',fin:true}],
+  // TEMATICI
+  clean:        [{t:'INRG',n:'iShares Global Clean Energy UCITS ETF USD Acc',i:'IE00BX1Z4460',e:'iShares',ter:0.65,p:7.5,acc:true,r:'fisica',fin:true}],
+  ai:           [{t:'XDAI',n:'Xtrackers Artificial Intelligence & Big Data ETF',i:'IE00BGV5VN51',e:'Xtrackers',ter:0.35,p:32,acc:true,r:'fisica',fin:true}],
+  defense_glb:  [{t:'EPOL',n:'Amundi STOXX Europe Defence UCITS ETF Acc',i:'IE0009HF1MK5',e:'Amundi',ter:0.35,p:14,acc:true,r:'swap',fin:true}],
+  gold:         [{t:'PPFB',n:'iShares Physical Gold ETC',i:'IE00B4ND3602',e:'iShares',ter:0.12,p:85.65,acc:false,r:'fisica',fin:true},
+                 {t:'XGLD',n:'Xtrackers Physical Gold EUR Hedged ETC',i:'DE000A1EK0G3',e:'Xtrackers',ter:0.15,p:16,acc:false,r:'fisica',fin:true}],
+  silver:       [{t:'SSLN',n:'iShares Physical Silver ETC',i:'IE00B4NCWG09',e:'iShares',ter:0.20,p:6.5,acc:false,r:'fisica',fin:true}],
+};
+
+const BROKER_INFO = {
+  'fineco':         'iShares, Xtrackers, Amundi, Franklin — commissioni €0 con Piano Replay',
+  'trade-republic': 'Tutti gli ETF UCITS — commissione €1/acquisto',
+  'degiro':         'Selezione core gratuita, altrimenti €2/acquisto',
+  'directa':        'Nessuna promo ETF dedicata, ~€5/acquisto',
+  'ibkr':           'Commissioni basse (~$1), ideale per grandi importi',
+};
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let S = { budget:500, broker:'fineco', selected:[], weights:{} };
+let chartInstances = {};
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+window.onload = () => {
+  renderCatFilters();
+  renderIndexGrid();
+  updateBrokerInfo();
+};
+
+// ══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════════
+function goTo(n) {
+  [1,2,3,4].forEach(i => {
+    document.getElementById('screen-'+i).classList.toggle('active', i===n);
+    const d = document.getElementById('dot-'+i);
+    d.classList.remove('active','done');
+    if(i<n) d.classList.add('done');
+    else if(i===n) d.classList.add('active');
+  });
+  if(n===3) renderWeights();
+  if(n===2) S.budget = +document.getElementById('budget').value||500;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ══════════════════════════════════════════════════════════════
+// STEP 1
+// ══════════════════════════════════════════════════════════════
+function setBudget(v) {
+  S.budget = v;
+  document.getElementById('budget').value = v;
+  document.querySelectorAll('.preset-btn').forEach(b => {
+    const bv = +b.textContent.replace(/[€.\s]/g,'').replace('000','000');
+    b.classList.toggle('active', false);
+  });
+  // highlight correct preset
+  const map = {200:'€200',500:'€500',750:'€750',1000:'€1.000',2000:'€2.000',5000:'€5.000'};
+  document.querySelectorAll('.preset-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent.trim() === (map[v]||''));
+  });
+}
+function onBudget() { S.budget = +document.getElementById('budget').value||500; document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active')); }
+function setBroker(el) {
+  document.querySelectorAll('.broker-pill').forEach(p=>p.classList.remove('selected'));
+  el.classList.add('selected');
+  S.broker = el.dataset.broker;
+  updateBrokerInfo();
+}
+function updateBrokerInfo() {
+  const el = document.getElementById('broker-info');
+  if(!el) return;
+  const info = BROKER_INFO[S.broker]||'';
+  el.innerHTML = `<div style="font-size:12px;color:var(--accent2);display:flex;gap:8px;align-items:flex-start;line-height:1.5">
+    <svg width="13" height="13" style="flex-shrink:0;margin-top:1px" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>${info}</div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// STEP 2
+// ══════════════════════════════════════════════════════════════
+function renderCatFilters() {
+  const el = document.getElementById('cat-filters');
+  const total = IDX.length;
+  el.innerHTML = `<button class="cat-btn active" onclick="filterCat('all',this)">Tutti (${total})</button>` +
+    Object.entries(CAT).map(([k,v]) => {
+      const n = IDX.filter(i=>i.cat===k).length;
+      const isBond = v.assetType==='bond';
+      return `<button class="cat-btn" onclick="filterCat('${k}',this)" style="border-left:2px solid ${v.color}50">${v.label} <span style="color:var(--muted)">(${n})</span></button>`;
+    }).join('');
+}
+function filterCat(cat, btn) {
+  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.cat-section').forEach(s => {
+    s.style.display = (cat==='all'||s.dataset.cat===cat) ? 'block':'none';
+  });
+}
+function renderIndexGrid() {
+  const grid = document.getElementById('index-grid');
+  const cats = [...new Set(IDX.map(i=>i.cat))];
+  grid.innerHTML = cats.map(cat => {
+    const meta = CAT[cat];
+    const items = IDX.filter(i=>i.cat===cat);
+    const isBond = meta.assetType==='bond';
+    return `<div class="cat-section" data-cat="${cat}">
+      <div class="cat-header" style="color:${meta.color}">
+        <span style="width:14px;height:1.5px;background:${meta.color};display:inline-block;flex-shrink:0"></span>
+        ${meta.label}
+        ${isBond?`<span class="ibadge tb" style="margin-left:0">obblig.</span>`:''}
+      </div>
+      <div class="index-grid">
+        ${items.map(idx => `
+          <div class="index-pill" id="pill-${idx.id}" onclick="toggleIdx('${idx.id}')">
+            <div class="ichk"><svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 4.5l2 2L7.5 2" stroke="#0a0a0f" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+            <div style="flex:1;min-width:0">
+              <div class="iname">${idx.name}</div>
+              <div class="iregion">${meta.label}</div>
+            </div>
+            ${idx.hedge?'<span class="ibadge tb">€H</span>':''}
+            ${idx.isBond?`<span class="ibadge" style="background:rgba(56,189,248,.1);border:1px solid rgba(56,189,248,.2);color:#38bdf8">dur.${idx.duration}y</span>`:''}
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleIdx(id) {
+  const i = S.selected.indexOf(id);
+  if(i>-1){ S.selected.splice(i,1); document.getElementById('pill-'+id).classList.remove('selected'); }
+  else{ S.selected.push(id); document.getElementById('pill-'+id).classList.add('selected'); }
+  document.getElementById('sel-count').textContent = S.selected.length;
+  document.getElementById('btn-2-3').disabled = S.selected.length===0;
+}
+function clearSel() {
+  S.selected=[];
+  document.querySelectorAll('.index-pill').forEach(p=>p.classList.remove('selected'));
+  document.getElementById('sel-count').textContent='0';
+  document.getElementById('btn-2-3').disabled=true;
+}
+
+// ══════════════════════════════════════════════════════════════
+// STEP 3 — WEIGHTS WITH MANUAL INPUT
+// ══════════════════════════════════════════════════════════════
+function renderWeights() {
+  const even = Math.floor(90/S.selected.length);
+  S.selected.forEach(id=>{ if(!S.weights[id]) S.weights[id]=even; });
+  Object.keys(S.weights).forEach(k=>{ if(!S.selected.includes(k)) delete S.weights[k]; });
+  const budget = +document.getElementById('budget').value||500;
+  const container = document.getElementById('weight-rows');
+  container.innerHTML = S.selected.map(id => {
+    const idx = IDX.find(i=>i.id===id);
+    const meta = CAT[idx.cat];
+    const w = S.weights[id];
+    const eur = Math.round(budget*w/100);
+    const isBond = meta.assetType==='bond';
+    return `<div class="weight-row">
+      <div class="wname">
+        <div class="wname-main" title="${idx.name}">${idx.name}</div>
+        <div class="wname-sub" style="color:${meta.color}">${meta.label}${isBond?' · obblig.':''}</div>
+      </div>
+      <div class="wslider-wrap">
+        <input type="range" min="0" max="100" value="${w}" step="1" oninput="setWSlider('${id}',+this.value)">
+      </div>
+      <input class="wnum-input" type="number" id="wnum-${id}" value="${w}" min="0" max="100" step="1"
+        oninput="setWManual('${id}',+this.value)" onblur="clampW('${id}')">
+      <div class="weur-lbl" id="we-${id}">€${eur}</div>
+    </div>`;
+  }).join('');
+  updateTotal();
+}
+function setWSlider(id, v) {
+  S.weights[id] = v;
+  document.getElementById('wnum-'+id).value = v;
+  const budget = +document.getElementById('budget').value||500;
+  document.getElementById('we-'+id).textContent = '€'+Math.round(budget*v/100);
+  updateTotal();
+}
+function setWManual(id, v) {
+  if(isNaN(v)||v<0) v=0;
+  if(v>100) v=100;
+  S.weights[id] = v;
+  const slider = document.querySelector(`[oninput*="setWSlider('${id}'"]`);
+  if(slider) slider.value = v;
+  const budget = +document.getElementById('budget').value||500;
+  document.getElementById('we-'+id).textContent = '€'+Math.round(budget*v/100);
+  updateTotal();
+}
+function clampW(id) {
+  const inp = document.getElementById('wnum-'+id);
+  let v = +inp.value;
+  if(isNaN(v)||v<0) v=0;
+  if(v>100) v=100;
+  inp.value = v;
+  setWManual(id, v);
+}
+function updateTotal() {
+  const total = Object.values(S.weights).reduce((a,b)=>a+b,0);
+  const el = document.getElementById('wt-total');
+  const bar = document.getElementById('wt-bar-fill');
+  el.textContent = total+'%';
+  el.className = total===100?'wt-ok':total>100?'wt-over':'wt-under';
+  bar.style.width = Math.min(100,total)+'%';
+  bar.style.background = total>100?'var(--danger)':total===100?'var(--success)':'var(--warn)';
+  document.getElementById('btn-3-4').disabled = total>100;
+}
+function autoBalance() {
+  const n = S.selected.length; if(!n) return;
+  const base = Math.floor(90/n); let rem = 90-base*n;
+  S.selected.forEach((id,i)=>{ S.weights[id]=base+(i<rem?1:0); });
+  renderWeights();
+}
+
+// ══════════════════════════════════════════════════════════════
+// SCORING
+// ══════════════════════════════════════════════════════════════
+function scoreETF(etf, targetEur) {
+  let s=100;
+  const prefAcc=document.getElementById('pref-acc').checked;
+  const prefPrice=document.getElementById('pref-price').checked;
+  const prefTer=document.getElementById('pref-ter').checked;
+  if(prefTer) s-=etf.ter*250;
+  if(prefPrice){ const p=etf.p; if(p>targetEur*0.75)s-=45; else if(p>100)s-=20; else if(p>60)s-=8; else if(p>=3&&p<=60)s+=12; }
+  if(prefAcc&&!etf.acc) s-=15;
+  if(S.broker==='fineco'&&etf.fin) s+=20;
+  return Math.round(s);
+}
+
+// ══════════════════════════════════════════════════════════════
+// PORTFOLIO ANALYSIS — geo, sector, asset class, fx
+// ══════════════════════════════════════════════════════════════
+function buildPortfolioAnalysis(results) {
+  // aggregate by asset class
+  const assetClass = {equity:0, bond:0, commodity:0, mixed:0};
+  const geoMap = {usa:0, eu:0, asia:0, em:0, latam:0, global:0, other:0};
+  const sectorMap = {tech:0, fin:0, health:0, cons:0, ind:0, energy:0, mat:0, util:0, re:0, bond:0, commodity:0, other:0};
+  const fxMap = {USD:0, EUR:0, GBP:0, JPY:0, EM:0, other:0};
+  let totalW = 0;
+
+  S.selected.forEach(id => {
+    const idx = IDX.find(i=>i.id===id);
+    const w = S.weights[id]||0;
+    if(!w) return;
+    totalW += w;
+    const meta = CAT[idx.cat];
+    // asset class
+    if(idx.isCommodity) assetClass.commodity += w;
+    else if(meta.assetType==='bond') assetClass.bond += w;
+    else if(meta.assetType==='mixed') assetClass.mixed += w;
+    else assetClass.equity += w;
+    // geo
+    if(idx.geo) Object.entries(idx.geo).forEach(([k,v])=>{ if(geoMap[k]!==undefined) geoMap[k]+=w*v/100; else geoMap.other+=w*v/100; });
+    // sector
+    if(idx.sector) Object.entries(idx.sector).forEach(([k,v])=>{ if(sectorMap[k]!==undefined) sectorMap[k]+=w*v/100; else sectorMap.other+=w*v/100; });
+    // FX exposure (simplified)
+    if(idx.isBond){
+      // hedged or EUR
+      if(idx.hedge||idx.cat.includes('bond')){ fxMap.EUR+=w; }
+      else if(idx.geo&&idx.geo.usa){ fxMap.USD+=w*((idx.geo.usa||0)/100); fxMap.EUR+=w*(1-(idx.geo.usa||0)/100); }
+      else fxMap.EUR+=w;
+    } else if(idx.hedge){ fxMap.EUR+=w; }
+    else if(idx.geo){
+      const g=idx.geo;
+      fxMap.USD+=w*((g.usa||0)/100);
+      fxMap.EUR+=w*((g.eu||0)/100);
+      fxMap.JPY+=w*((g.asia||0)/100)*0.5;
+      fxMap.EM+=w*(((g.em||0)+(g.latam||0)+(g.asia||0)*0.5)/100);
+      fxMap.other+=w*((g.other||0)/100);
+    }
+  });
+
+  // normalize
+  const norm = o => { const t=Object.values(o).reduce((a,b)=>a+b,0)||1; const r={}; Object.entries(o).forEach(([k,v])=>r[k]=Math.round(v/t*100)); return r; };
+  return { assetClass:norm(assetClass), geo:norm(geoMap), sector:norm(sectorMap), fx:norm(fxMap), totalW };
+}
+
+// Risk profile
+function getRiskProfile(analysis) {
+  const eq = analysis.assetClass.equity||0;
+  const bond = analysis.assetClass.bond||0;
+  const comm = analysis.assetClass.commodity||0;
+  // US tech concentration
+  const techConc = analysis.sector.tech||0;
+  const usConc = analysis.geo.usa||0;
+
+  let riskScore = 0;
+  riskScore += eq * 0.7;
+  riskScore += comm * 0.5;
+  riskScore += bond * 0.1;
+  // concentration penalty
+  if(techConc>30) riskScore += (techConc-30)*0.5;
+  if(usConc>70) riskScore += (usConc-70)*0.3;
+
+  riskScore = Math.min(100, Math.round(riskScore));
+
+  const level = riskScore>=75?'Molto Alto':riskScore>=55?'Alto':riskScore>=35?'Moderato':riskScore>=15?'Basso':'Molto Basso';
+  const color = riskScore>=75?'var(--danger)':riskScore>=55?'var(--warn)':riskScore>=35?'var(--accent3)':'var(--accent)';
+
+  // Expected return estimation (simplified annualised)
+  const expReturn = Math.round((eq*0.09 + bond*0.035 + comm*0.04) / 100 * 10) / 10;
+  const maxDD = Math.round(eq*0.5 + comm*0.3 + bond*0.08) / 100;
+  const volatility = Math.round((eq*0.18 + bond*0.05 + comm*0.2) / 100 * 10) / 10;
+  const sharpe = volatility>0 ? Math.round(expReturn/volatility*10)/10 : 0;
+
+  // Comment
+  let comment = '';
+  if(riskScore>=75){
+    comment = `Portafoglio ad alto rischio con attese di rendimento elevate (~${expReturn}% annuo stimato a lungo termine). La componente azionaria al ${eq}% implica drawdown potenziali fino al ${Math.round(maxDD*100)}% nelle fasi di mercato avverse. Ideale per investitori con orizzonte 15+ anni e alta tolleranza alla volatilità. ${techConc>35?`La concentrazione sul settore tecnologico (${techConc}%) amplifica la sensibilità ai cicli growth/rates. `:''}${usConc>70?`Il peso USA (${usConc}%) espone al rischio valutario USD/EUR e alla politica monetaria Fed. `:''}Storicamente, portafogli simili hanno generato rendimenti annualizzati del 7-10% su periodi decennali.`;
+  } else if(riskScore>=55){
+    comment = `Portafoglio bilanciato verso il rischio con rendimento atteso ~${expReturn}% annuo. Il mix equity/bond offre protezione parziale nelle fasi ribassiste (-${Math.round(maxDD*100)}% drawdown massimo stimato), pur mantenendo un buon potenziale di crescita. Adatto a orizzonti di 7-12 anni.`;
+  } else if(riskScore>=35){
+    comment = `Portafoglio moderato con buon equilibrio rischio/rendimento. La componente obbligazionaria al ${bond}% riduce la volatilità (~${volatility}% annua) e offre flussi cedolari stabili. Rendimento atteso ~${expReturn}% annuo. Ideale per orizzonti 5-8 anni.`;
+  } else {
+    comment = `Portafoglio conservativo dominato da obbligazioni e asset a basso rischio. Rendimento atteso ~${expReturn}% annuo, volatilità contenuta (~${volatility}%). Adatto a chi vuole preservare il capitale con rendimenti moderati su orizzonti brevi (2-5 anni).`;
+  }
+
+  return { riskScore, level, color, expReturn, volatility, sharpe, maxDD: Math.round(maxDD*100), comment };
+}
+
+// ══════════════════════════════════════════════════════════════
+// SEARCH
+// ══════════════════════════════════════════════════════════════
+async function runSearch() {
+  goTo(4);
+  const budget = S.budget = +document.getElementById('budget').value||500;
+  const area = document.getElementById('results-area');
+  const msgs = ['Analisi indici selezionati...','Confronto TER e prezzi...','Calcolo quote intere...','Costruzione grafici...','Analisi rischio portafoglio...'];
+  let mi=0;
+  area.innerHTML=`<div class="loading-wrap"><div class="spinner"></div><div class="loading-msg" id="lmsg">${msgs[0]}</div><div class="progress-bar"><div class="progress-fill"></div></div></div>`;
+  const iv=setInterval(()=>{ const el=document.getElementById('lmsg'); if(el&&mi<msgs.length) el.textContent=msgs[mi++]; },700);
+
+  const localResults = buildLocalResults(budget);
+
+  // Try AI for better price estimates
+  try {
+    const selectedList = S.selected.map(id=>{
+      const idx=IDX.find(i=>i.id===id); const w=S.weights[id]||0;
+      return `${id}: ${idx.name} (${w}%, target €${Math.round(budget*w/100)}/mese)`;
+    }).join('\n');
+    const prompt = `Sei un esperto ETF UCITS quotati su Borsa Italiana o Xetra. Per ogni indice, fornisci il prezzo di chiusura più recente (marzo 2026) in EUR dell'ETF suggerito nel database locale. Rispondi SOLO in JSON: {"id":{"prezzo":0.00,"prezzo_alt":0.00,"note":"breve nota"}}. Indici:\n${selectedList}`;
+    const res = await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})});
+    const d = await res.json();
+    const txt = d.content?.find(b=>b.type==='text')?.text||'';
+    const clean = txt.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    S.selected.forEach(id=>{
+      if(parsed[id]&&localResults[id]){
+        if(parsed[id].prezzo&&parsed[id].prezzo>0) localResults[id].best.p=parsed[id].prezzo;
+        if(parsed[id].prezzo_alt&&parsed[id].prezzo_alt>0&&localResults[id].alt) localResults[id].alt.p=parsed[id].prezzo_alt;
+        if(parsed[id].note) localResults[id].best.note=parsed[id].note;
+      }
+    });
+  } catch(e){}
+
+  clearInterval(iv);
+  renderResults(localResults, budget);
+}
+
+function buildLocalResults(budget) {
+  const res={};
+  S.selected.forEach(id=>{
+    const pool=DB[id]||[];
+    const tgt=budget*(S.weights[id]||0)/100;
+    const sorted=[...pool].sort((a,b)=>scoreETF(b,tgt)-scoreETF(a,tgt));
+    res[id]={best:sorted[0]?{...sorted[0]}:null, alt:sorted[1]?{...sorted[1]}:null};
+  });
+  return res;
+}
+
+// ══════════════════════════════════════════════════════════════
+// RENDER RESULTS
+// ══════════════════════════════════════════════════════════════
+function renderResults(results, budget) {
+  const area = document.getElementById('results-area');
+  const analysis = buildPortfolioAnalysis(results);
+  const risk = getRiskProfile(analysis);
+
+  let totalVersato=0, totalTer=0, totalPeso=0;
+  const pacRows=[];
+  let etfHtml='';
+
+  S.selected.forEach((id,si)=>{
+    const idx=IDX.find(i=>i.id===id);
+    const meta=CAT[idx.cat];
+    const w=S.weights[id]||0; if(!w) return;
+    const tgt=Math.round(budget*w/100);
+    const best=results[id]?.best; const alt=results[id]?.alt;
+    if(!best) return;
+    const q=Math.max(1,Math.floor(tgt/best.p));
+    const spesa=+(q*best.p).toFixed(2);
+    const resto=+(tgt-spesa).toFixed(2);
+    totalVersato+=spesa; totalTer+=best.ter*w; totalPeso+=w;
+    const finOk=S.broker!=='fineco'||best.fin;
+    pacRows.push({idx:idx.name,ticker:best.t,q,spesa,tgt,w,isBond:idx.isBond,isCommodity:idx.isCommodity,color:meta.color});
+
+    etfHtml+=`<div class="result-section" style="animation-delay:${si*50}ms">
+      <div class="result-section-title" style="color:${meta.color}">
+        ${idx.name}<span class="badge-pct">${w}% · €${tgt}/mese</span>
+      </div>
+      <div class="etf-best">
+        <div class="etf-top-row">
+          <div class="etf-rank etf-rank-1">1</div>
+          <div class="etf-body">
+            <div class="etf-ticker">${best.t}</div>
+            <div class="etf-name">${best.n}</div>
+            <div class="etf-isin">${best.i}</div>
+          </div>
+        </div>
+        <div class="etf-tags">
+          <span class="tag ${best.ter<0.20?'tg':best.ter<0.40?'ta':'tr'}">TER ${best.ter}%</span>
+          <span class="tag ${best.p<=60&&best.p>=3?'tg':'ta'}">~€${best.p.toFixed(2)}/q</span>
+          <span class="tag ${best.acc?'tb':'ta'}">${best.acc?'Acc':'Dist'}</span>
+          <span class="tag ts">${best.r}</span>
+          <span class="tag ${finOk?'tg':'tr'}">${finOk?'✓ Fineco':'✗ no promo'}</span>
+          <span class="tag ts">${best.e}</span>
+          ${idx.isBond?`<span class="tag tb">dur. ${idx.duration}y · yield ~${idx.yield}%</span>`:''}
+        </div>
+        <div class="etf-metrics">
+          <div class="em"><div class="em-label">Quote/mese</div><div class="em-val" style="color:var(--accent)">${q}</div></div>
+          <div class="em"><div class="em-label">Spesa reale</div><div class="em-val">€${spesa.toFixed(2)}</div></div>
+          <div class="em"><div class="em-label">Target</div><div class="em-val">€${tgt}</div></div>
+          <div class="em"><div class="em-label">Resto</div><div class="em-val" style="color:${Math.abs(resto)<3?'var(--success)':resto<0?'var(--danger)':'var(--accent3)'}">€${Math.abs(resto).toFixed(2)}</div></div>
+        </div>
+        ${best.note?`<div class="etf-note">${best.note}</div>`:''}
+      </div>
+      ${alt?`<div class="etf-alt">
+        <div class="etf-top-row">
+          <div class="etf-rank etf-rank-2">2</div>
+          <div class="etf-body">
+            <div class="etf-ticker" style="font-size:14px">${alt.t} <span style="font-size:11px;color:var(--muted);font-weight:400">alternativa</span></div>
+            <div class="etf-name">${alt.n}</div>
+            <div class="etf-isin">${alt.i}</div>
+          </div>
+        </div>
+        <div class="etf-tags">
+          <span class="tag ts">TER ${alt.ter}%</span>
+          <span class="tag ts">~€${alt.p.toFixed(2)}/q</span>
+          <span class="tag ${alt.acc?'tb':'ta'}">${alt.acc?'Acc':'Dist'}</span>
+          <span class="tag ts">${alt.r} · ${(S.broker!=='fineco'||alt.fin)?'✓ Fineco':'✗ no promo'}</span>
+          <span class="tag ts">${Math.max(1,Math.floor(tgt/alt.p))} quote · €${+(Math.max(1,Math.floor(tgt/alt.p))*alt.p).toFixed(2)}</span>
+        </div>
+      </div>`:''}
+    </div>`;
+  });
+
+  const avgTer = totalPeso>0?(totalTer/totalPeso).toFixed(3):'—';
+  const resto = +(budget-totalVersato).toFixed(2);
+
+  // SUMMARY METRICS
+  const summaryHtml=`<div class="results-summary">
+    <div class="summary-card"><div class="summary-label">Versato</div><div class="summary-val" style="color:var(--accent)">€${Math.round(totalVersato)}</div></div>
+    <div class="summary-card"><div class="summary-label">Resto</div><div class="summary-val" style="color:${Math.abs(resto)<20?'var(--success)':'var(--warn)'}">€${Math.abs(resto).toFixed(0)}</div></div>
+    <div class="summary-card"><div class="summary-label">TER medio</div><div class="summary-val" style="font-size:15px">${avgTer}%</div></div>
+    <div class="summary-card"><div class="summary-label">Rendim. atteso</div><div class="summary-val" style="color:var(--accent3)">${risk.expReturn}%</div></div>
+  </div>
+  ${S.broker==='fineco'&&S.selected.some(id=>results[id]?.best&&!results[id].best.fin)?
+    '<div class="alert alert-warn"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>Alcuni ETF non sono in promo Fineco. Valuta le alternative indicate.</div>':''}`;
+
+  // PAC TABLE
+  const pacHtml=`<div class="pac-summary">
+    <div style="font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--b1)">Ordini mensili</div>
+    ${pacRows.map(r=>{
+      const typeColor = r.isBond?'#38bdf8':r.isCommodity?'#fb923c':r.color;
+      const typeLabel = r.isBond?'bond':r.isCommodity?'ETC':'equity';
+      return `<div class="pac-row">
+        <span class="pac-index" title="${r.idx}">${r.idx}</span>
+        <span class="pac-asset-type" style="background:${typeColor}18;border:1px solid ${typeColor}40;color:${typeColor}">${typeLabel}</span>
+        <span class="pac-ticker">${r.ticker}</span>
+        <span class="pac-detail" style="color:var(--accent)">${r.q}× = <strong>€${r.spesa.toFixed(2)}</strong></span>
+      </div>`;
+    }).join('')}
+    <div class="pac-total-row">
+      <span class="pac-total-label">Totale mensile</span>
+      <span class="pac-total-val">€${Math.round(totalVersato)}</span>
+    </div>
+    <div class="resto-info">Budget €${budget} · Resto €${Math.abs(resto).toFixed(2)} · TER ponderato ${avgTer}% · Rend. atteso ~${risk.expReturn}%/anno</div>
+  </div>`;
+
+  // CHARTS
+  const chartsHtml=`<div class="section-divider">Analisi portafoglio</div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Allocazione asset class</div>
+      <div class="donut-wrap"><canvas id="ch-asset" class="donut" width="140" height="140"></canvas>
+        <div class="donut-center"><div class="donut-center-val">${analysis.assetClass.equity||0}%</div><div class="donut-center-lbl">equity</div></div>
+      </div>
+      <div class="legend-list" id="leg-asset"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Esposizione geografica</div>
+      <div class="donut-wrap"><canvas id="ch-geo" class="donut" width="140" height="140"></canvas>
+        <div class="donut-center"><div class="donut-center-val">${analysis.geo.usa||0}%</div><div class="donut-center-lbl">USA</div></div>
+      </div>
+      <div class="legend-list" id="leg-geo"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Distribuzione settoriale</div>
+      <div class="bar-chart" id="chart-sector"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Esposizione valutaria (FX)</div>
+      <div class="bar-chart" id="chart-fx"></div>
+    </div>
+  </div>`;
+
+  // RISK CARD
+  const riskHtml=`<div class="risk-card">
+    <div class="card-title">Profilo rischio / rendimento</div>
+    <div class="risk-header">
+      <div class="risk-badge" style="background:${risk.color}20;border:1px solid ${risk.color}40;color:${risk.color}">Rischio ${risk.level}</div>
+      <div class="risk-score-wrap">
+        <div class="risk-track"><div class="risk-fill" style="width:${risk.riskScore}%;background:${risk.color}"></div></div>
+        <div class="risk-labels"><span>Basso</span><span>Moderato</span><span>Alto</span><span>Molto Alto</span></div>
+      </div>
+    </div>
+    <div class="risk-grid">
+      <div class="risk-metric"><div class="risk-metric-lbl">Rend. atteso/anno</div><div class="risk-metric-val" style="color:var(--accent)">${risk.expReturn}%</div></div>
+      <div class="risk-metric"><div class="risk-metric-lbl">Volatilità annua</div><div class="risk-metric-val" style="color:var(--accent3)">${risk.volatility}%</div></div>
+      <div class="risk-metric"><div class="risk-metric-lbl">Max drawdown est.</div><div class="risk-metric-val" style="color:var(--danger)">-${risk.maxDD}%</div></div>
+      <div class="risk-metric"><div class="risk-metric-lbl">Sharpe ratio est.</div><div class="risk-metric-val">${risk.sharpe}</div></div>
+      <div class="risk-metric"><div class="risk-metric-lbl">% Azionario</div><div class="risk-metric-val">${analysis.assetClass.equity||0}%</div></div>
+      <div class="risk-metric"><div class="risk-metric-lbl">% Obbligazionario</div><div class="risk-metric-val">${analysis.assetClass.bond||0}%</div></div>
+    </div>
+    <div class="risk-comment">${risk.comment}</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:10px;font-family:var(--mono)">⚠ Stime basate su rendimenti storici. Non costituiscono garanzie né consulenza finanziaria.</div>
+  </div>`;
+
+  // EXPORT
+  const exportText=buildExport(pacRows,totalVersato,resto,avgTer,risk);
+  const exportHtml=`<div class="export-block">
+    <div class="card-title" style="margin-bottom:12px">Esporta portafoglio</div>
+    <div class="export-text" id="export-text">${exportText}</div>
+    <div class="export-actions">
+      <button class="btn btn-primary" onclick="copyExport()">Copia</button>
+      <button class="btn btn-ghost" onclick="downloadExport()">Scarica .txt</button>
+      <button class="btn btn-ghost" onclick="saveToStorage()">Salva in app</button>
+    </div>
+  </div>`;
+
+  area.innerHTML = summaryHtml + `<div class="section-divider">ETF selezionati</div>` + etfHtml + pacHtml + chartsHtml + riskHtml + exportHtml;
+
+  // Draw charts after DOM update
+  setTimeout(()=>{
+    drawDonut('ch-asset','leg-asset',
+      ['Azionario','Obbligazionario','Commodity','Misto'],
+      [analysis.assetClass.equity||0,analysis.assetClass.bond||0,analysis.assetClass.commodity||0,analysis.assetClass.mixed||0],
+      ['#818cf8','#38bdf8','#fb923c','#6ee7b7']);
+
+    const geoEntries=[['USA',analysis.geo.usa||0,'#6ee7b7'],['Europa',analysis.geo.eu||0,'#34d399'],['Asia',analysis.geo.asia||0,'#c084fc'],['EM/LatAm',(analysis.geo.em||0)+(analysis.geo.latam||0),'#f59e0b'],['Globale',analysis.geo.global||0,'#818cf8'],['Altro',analysis.geo.other||0,'#6b7280']].filter(e=>e[1]>0);
+    drawDonut('ch-geo','leg-geo',geoEntries.map(e=>e[0]),geoEntries.map(e=>e[1]),geoEntries.map(e=>e[2]));
+
+    const sectorLabels={tech:'Tecnologia',fin:'Finanziari',health:'Sanità',cons:'Consumi',ind:'Industriali',energy:'Energia',mat:'Materiali',util:'Utilities',re:'Real Estate',bond:'Obbligaz.',commodity:'Commodity',other:'Altro'};
+    const sectorColors={tech:'#818cf8',fin:'#38bdf8',health:'#6ee7b7',cons:'#f472b6',ind:'#c084fc',energy:'#f59e0b',mat:'#fb923c',util:'#34d399',re:'#fbbf24',bond:'#38bdf8',commodity:'#fb923c',other:'#6b7280'};
+    drawBarChart('chart-sector',Object.entries(analysis.sector).filter(([,v])=>v>2).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([k,v])=>({label:sectorLabels[k]||k,val:v,color:sectorColors[k]||'#6b7280'})));
+
+    const fxLabels={USD:'🇺🇸 USD',EUR:'🇪🇺 EUR',GBP:'🇬🇧 GBP',JPY:'🇯🇵 JPY',EM:'EM currencies',other:'Altro'};
+    const fxColors={USD:'#6ee7b7',EUR:'#818cf8',GBP:'#34d399',JPY:'#f472b6',EM:'#f59e0b',other:'#6b7280'};
+    drawBarChart('chart-fx',Object.entries(analysis.fx).filter(([,v])=>v>1).sort((a,b)=>b[1]-a[1]).map(([k,v])=>({label:fxLabels[k]||k,val:v,color:fxColors[k]||'#6b7280'})));
+  },100);
+}
+
+function drawDonut(canvasId, legendId, labels, data, colors) {
+  const el = document.getElementById(canvasId);
+  if(!el) return;
+  if(chartInstances[canvasId]) chartInstances[canvasId].destroy();
+  const filtered = labels.map((l,i)=>({l,d:data[i],c:colors[i]})).filter(x=>x.d>0);
+  chartInstances[canvasId] = new Chart(el, {
+    type:'doughnut',
+    data:{labels:filtered.map(x=>x.l),datasets:[{data:filtered.map(x=>x.d),backgroundColor:filtered.map(x=>x.c),borderColor:'#08080f',borderWidth:3,hoverBorderWidth:3}]},
+    options:{responsive:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.parsed}%`}}}}
+  });
+  const leg=document.getElementById(legendId);
+  if(leg) leg.innerHTML=filtered.map(x=>`<div class="legend-item"><div class="legend-dot" style="background:${x.c}"></div><span class="legend-name">${x.l}</span><span class="legend-val">${x.d}%</span></div>`).join('');
+}
+
+function drawBarChart(containerId, items) {
+  const el=document.getElementById(containerId); if(!el) return;
+  el.innerHTML=items.map(it=>`
+    <div class="bar-row-chart">
+      <div class="bar-label-chart">${it.label}</div>
+      <div class="bar-track-chart"><div class="bar-fill-chart" style="width:${Math.min(it.val,100)}%;background:${it.color}"></div></div>
+      <div class="bar-val-chart">${it.val}%</div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// EXPORT
+// ══════════════════════════════════════════════════════════════
+function buildExport(rows, tot, resto, avgTer, risk) {
+  const d=new Date().toLocaleDateString('it-IT');
+  let t=`PAC BUILDER v3 — ${d}\n${'─'.repeat(54)}\nBudget: €${S.budget}/mese  |  Broker: ${S.broker}\n\n`;
+  t+=`ORDINI MENSILI\n`;
+  rows.forEach(r=>{ t+=`${r.ticker.padEnd(6)} ${r.idx.padEnd(30)} ${r.q}× = €${r.spesa.toFixed(2)}  (${r.w}%)\n`; });
+  t+=`\n${'─'.repeat(54)}\nTotale versato: €${Math.round(tot)}  |  Resto: €${Math.abs(resto).toFixed(2)}  |  TER: ${avgTer}%\n`;
+  t+=`\nPROFILO RISCHIO: ${risk.level} (score ${risk.riskScore}/100)\n`;
+  t+=`Rendimento atteso: ~${risk.expReturn}%/anno  |  Volatilità: ~${risk.volatility}%  |  Max DD: -${risk.maxDD}%\n`;
+  t+=`\n⚠ Prezzi stimati. Non consulenza finanziaria. Verificare su Borsa Italiana.\n`;
+  return t;
+}
+function copyExport(){ navigator.clipboard.writeText(document.getElementById('export-text')?.textContent||'').then(()=>showToast('Copiato!')); }
+function downloadExport(){
+  const url=URL.createObjectURL(new Blob([document.getElementById('export-text')?.textContent||''],{type:'text/plain'}));
+  const a=document.createElement('a'); a.href=url; a.download='pac-portafoglio.txt'; a.click(); URL.revokeObjectURL(url);
+  showToast('File scaricato!');
+}
+function saveToStorage(){
+  try{ localStorage.setItem('pac_v3',JSON.stringify({date:new Date().toISOString(),budget:S.budget,broker:S.broker,weights:S.weights,selected:S.selected})); showToast('Salvato!'); }
+  catch(e){ showToast('Errore nel salvataggio'); }
+}
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+</script>
+</body>
+</html>
